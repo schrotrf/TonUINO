@@ -18,7 +18,7 @@
 */
 
 // uncomment the below line to enable five button support
-//#define FIVEBUTTONS
+#define FIVEBUTTONS
 
 static const uint32_t cardCookie = 322417479;
 
@@ -722,6 +722,18 @@ void setup() {
 
   Serial.begin(115200); // Es gibt ein paar Debug Ausgaben über die serielle Schnittstelle
 
+  // DFPlayer Mini initialisieren
+  mp3.begin();
+  
+  // load Settings from EEPROM
+  loadSettingsFromFlash();
+  volume = mySettings.initVolume;
+  mp3.setVolume(volume);
+  mp3.setEq(mySettings.eq - 1);
+
+  // Start Shortcut "at Startup" - e.g. Welcome Sound
+  playShortCut(3);
+
   // Wert für randomSeed() erzeugen durch das mehrfache Sammeln von rauschenden LSBs eines offenen Analogeingangs
   uint32_t ADC_LSB;
   uint32_t ADCSeed;
@@ -743,30 +755,13 @@ void setup() {
   // Busy Pin
   pinMode(busyPin, INPUT);
 
-  // load Settings from EEPROM
-  loadSettingsFromFlash();
-
-  // activate standby timer
-  setstandbyTimer();
-
-  // DFPlayer Mini initialisieren
-  mp3.begin();
   // Zwei Sekunden warten bis der DFPlayer Mini initialisiert ist
-  delay(2000);
-  volume = mySettings.initVolume;
-  mp3.setVolume(volume);
-  mp3.setEq(mySettings.eq - 1);
+  //delay(2000);
+
   // Fix für das Problem mit dem Timeout (ist jetzt in Upstream daher nicht mehr nötig!)
   //mySoftwareSerial.setTimeout(10000);
 
-  // NFC Leser initialisieren
-  SPI.begin();        // Init SPI bus
-  mfrc522.PCD_Init(); // Init MFRC522
-  mfrc522
-  .PCD_DumpVersionToSerial(); // Show details of PCD - MFRC522 Card Reader
-  for (byte i = 0; i < 6; i++) {
-    key.keyByte[i] = 0xFF;
-  }
+
 
   pinMode(buttonPause, INPUT_PULLUP);
   pinMode(buttonUp, INPUT_PULLUP);
@@ -786,12 +781,19 @@ void setup() {
     for (int i = 0; i < EEPROM.length(); i++) {
       EEPROM.update(i, 0);
     }
-    loadSettingsFromFlash();
   }
+  
+  // activate standby timer
+  setstandbyTimer();
 
-
-  // Start Shortcut "at Startup" - e.g. Welcome Sound
-  playShortCut(3);
+    // NFC Leser initialisieren
+  SPI.begin();        // Init SPI bus
+  mfrc522.PCD_Init(); // Init MFRC522
+  mfrc522
+  .PCD_DumpVersionToSerial(); // Show details of PCD - MFRC522 Card Reader
+  for (byte i = 0; i < 6; i++) {
+    key.keyByte[i] = 0xFF;
+  }
 }
 
 void readButtons() {
